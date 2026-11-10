@@ -1,0 +1,4 @@
+# server/ cwd에서 `bun test <경로>`를 실행할 때도 루트와 동일 preload가 적용되게 하는 방어 설정.
+# (server/ 자체에는 테스트 파일이 없다 — 전 테스트는 레포 루트 tests/ 소속.)
+[test]
+preload = ["../tests/preload.ts"]

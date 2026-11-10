@@ -1,0 +1,7 @@
+# bun test 전역 설정 — tests/preload.ts가 LOG_LEVEL 기본값을 silent로(테스트 출력 오염 방지).
+[test]
+preload = ["./tests/preload.ts"]
+
+# tsc가 워크스페이스 패키지의 bun-types를 찾도록 hoisted로 설치한다.
+[install]
+linker = "hoisted"

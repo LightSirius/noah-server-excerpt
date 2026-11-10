@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitAny": true,
+    "skipLibCheck": true,
+    "types": [
+      "bun-types"
+    ]
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "src/cluster/gatewayPeer.ts",
+    "src/cluster/worldIpcServer.ts",
+    "src/cluster/worldListen.ts",
+    "src/gateway/gatewayMain.ts",
+    "src/network/castFanout.ts",
+    "src/network/frameIngest.ts",
+    "src/network/packetAdmission.ts",
+    "src/network/session.ts",
+    "src/network/sessionManager.ts",
+    "src/network/tcpServer.ts",
+    "src/sim/deltaGroups.ts",
+    "src/sim/snapshotBuilder.ts",
+    "src/sim/snapshotDelta.ts",
+    "src/world/aoi/grid.ts",
+    "src/world/aoi/interestSet.ts",
+    "src/world/entityTable.ts",
+    "src/world/targetMap.ts"
+  ]
+}

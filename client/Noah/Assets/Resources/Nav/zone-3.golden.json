@@ -1,0 +1,68 @@
+{
+  "zoneId": 3,
+  "cases": [
+    {
+      "name": "Village spawn -> merchant",
+      "start": {
+        "cx": 32,
+        "cy": 32
+      },
+      "goal": {
+        "cx": 52,
+        "cy": 40
+      },
+      "simplified": [
+        {
+          "cx": 32,
+          "cy": 32
+        },
+        {
+          "cx": 52,
+          "cy": 40
+        }
+      ]
+    },
+    {
+      "name": "Village spawn -> return portal",
+      "start": {
+        "cx": 32,
+        "cy": 32
+      },
+      "goal": {
+        "cx": 28,
+        "cy": 24
+      },
+      "simplified": [
+        {
+          "cx": 32,
+          "cy": 32
+        },
+        {
+          "cx": 28,
+          "cy": 24
+        }
+      ]
+    },
+    {
+      "name": "Village outer wall nudge",
+      "start": {
+        "cx": 32,
+        "cy": 32
+      },
+      "goal": {
+        "cx": 0,
+        "cy": 0
+      },
+      "simplified": [
+        {
+          "cx": 32,
+          "cy": 32
+        },
+        {
+          "cx": 1,
+          "cy": 1
+        }
+      ]
+    }
+  ]
+}

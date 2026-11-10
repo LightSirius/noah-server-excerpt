@@ -1,0 +1,13 @@
+{
+  "name": "mmorpg-codegen",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "gen": "bun run gen.ts",
+    "gen:check": "bun run gen.ts --check"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.3"
+  }
+}

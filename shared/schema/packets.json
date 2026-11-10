@@ -1,0 +1,1246 @@
+{
+  "$schema_note": "패킷 단일 진실. 변경 시 shared/protocol.md, docs/architecture.md §3.2 동시 갱신.",
+  "$format_note": "정리 단계 (post Phase 6): v1 패킷 + v2 임시 ID 모두 폐기. spec(protocol.md §3) 기준 canonical ID 사용.",
+  "version": 2,
+  "_version_doc": "스키마 형식 v2(C0.1): structs/enums, 필드 속성 max/min/of/ofMax/optional, 패킷 속성 bodyOf/frozen. 패킷 본문은 전부 binary다 — 이진 전환(B1~B6)이 끝나 B6에서 defaultEncoding·패킷 encoding·freeform(자율 JSON) 속성을 폐지했다(gen이 거부한다 — 단계형 전환의 역사는 docs/adr/0003 §3). 검증 tools/codegen/schema.ts, 와이어 규칙 shared/protocol.md §2, 결정 docs/adr/0003-binary-body-codec.md.",
+  "protoVersion": 19,
+  "_protoVersion_doc": "클라↔서버 프로토콜 버전 단일 진실(HELLO.clientProtoVer·HELLO_ACK.serverProtoVer) → codegen PROTO_VERSION(TS)·Protocol.Version(C#). 와이어 비호환 변경 시 올린다.",
+  "header": {
+    "format": "v2",
+    "_format_doc": "v2=[len:u16 LE][id:u16 LE] 4바이트(B1, protoVersion 3). 구 v1=[id:u16 BE][len:u32 BE]는 구 클라 거절(v1 HELLO 서명 → v1 형식 KICK 1)에만 남는다 — server/src/net/wireFrame.ts.",
+    "endian": "little",
+    "order": ["len", "id"],
+    "id_bytes": 2,
+    "len_bytes": 2
+  },
+  "_structs_doc": "바이너리 레이아웃을 갖는 복합 타입. 바이너리 패킷이 쓰는 struct의 string/array 필드는 max 필수. 재귀 금지.",
+  "structs": {
+    "SnapshotUpdate": {
+      "fields": [
+        { "name": "entityId", "type": "u32" },
+        { "name": "x", "type": "f32" },
+        { "name": "y", "type": "f32" }
+      ]
+    },
+    "Waypoint": {
+      "fields": [
+        { "name": "x", "type": "f32" },
+        { "name": "y", "type": "f32" }
+      ]
+    },
+    "InventoryEntry": {
+      "fields": [
+        { "name": "slot", "type": "i32" },
+        { "name": "itemId", "type": "i32" },
+        { "name": "qty", "type": "i32" }
+      ]
+    },
+    "EquipmentSlots": {
+      "fields": [
+        { "name": "weapon", "type": "i32" },
+        { "name": "shield", "type": "i32" },
+        { "name": "helmet", "type": "i32" },
+        { "name": "armor", "type": "i32" },
+        { "name": "gloves", "type": "i32" },
+        { "name": "boots", "type": "i32" },
+        { "name": "accessory1", "type": "i32" },
+        { "name": "accessory2", "type": "i32" }
+      ]
+    },
+    "ShopOffer": {
+      "fields": [
+        { "name": "itemId", "type": "i32" },
+        { "name": "buyPrice", "type": "i32" },
+        { "name": "sellPrice", "type": "i32" }
+      ]
+    },
+    "SkillInfo": {
+      "fields": [
+        { "name": "skillId", "type": "i32" },
+        { "name": "name", "type": "string", "max": 64 },
+        { "name": "category", "type": "SkillCategory" },
+        { "name": "effectKind", "type": "SkillDefEffectKind" },
+        { "name": "mpCost", "type": "i32" },
+        { "name": "cooldownMs", "type": "i32" },
+        { "name": "range", "type": "f32" },
+        { "name": "slvReq", "type": "i32" },
+        { "name": "slpCost", "type": "i32" },
+        { "name": "maxLevel", "type": "i32" },
+        { "name": "targeting", "type": "SkillTargeting" },
+        { "name": "aoeRadius", "type": "f32" },
+        { "name": "level", "type": "i32" },
+        { "name": "learned", "type": "bool" },
+        { "name": "allowedRaces", "type": "u8" },
+        { "name": "bookOnly", "type": "bool" },
+        { "name": "bowRange", "type": "f32" }
+      ]
+    },
+    "DialogAction": {
+      "fields": [
+        { "name": "type", "type": "string", "max": 32 },
+        { "name": "questId", "type": "i32", "optional": true },
+        { "name": "shopId", "type": "i32", "optional": true }
+      ]
+    },
+    "DialogOption": {
+      "fields": [
+        { "name": "label", "type": "string", "max": 240 },
+        { "name": "next", "type": "string", "max": 64, "optional": true },
+        { "name": "action", "type": "DialogAction", "optional": true }
+      ]
+    },
+    "DialogNode": {
+      "fields": [
+        { "name": "id", "type": "string", "max": 64 },
+        { "name": "speaker", "type": "string", "max": 66 },
+        { "name": "pages", "type": "array", "of": "string", "max": 4, "ofMax": 600 },
+        { "name": "options", "type": "array", "of": "DialogOption", "max": 8 }
+      ]
+    },
+    "QuestLogObjective": {
+      "fields": [
+        { "name": "kind", "type": "QuestObjectiveKind" },
+        { "name": "text", "type": "string", "max": 96 },
+        { "name": "targetId", "type": "i32" },
+        { "name": "current", "type": "i32" },
+        { "name": "required", "type": "i32" }
+      ]
+    },
+    "RewardPreviewItem": {
+      "fields": [
+        { "name": "itemId", "type": "i32" },
+        { "name": "qty", "type": "i32" }
+      ]
+    },
+    "QuestRewardPreview": {
+      "fields": [
+        { "name": "exp", "type": "i32" },
+        { "name": "sexp", "type": "i32" },
+        { "name": "slp", "type": "i32" },
+        { "name": "gold", "type": "i32" },
+        { "name": "fixed", "type": "array", "of": "RewardPreviewItem", "max": 8 },
+        { "name": "choice", "type": "array", "of": "RewardPreviewItem", "max": 8 },
+        { "name": "random", "type": "array", "of": "RewardPreviewItem", "max": 8 },
+        { "name": "bonus", "type": "array", "of": "RewardPreviewItem", "max": 8 }
+      ]
+    },
+    "QuestLogEntry": {
+      "fields": [
+        { "name": "questId", "type": "i32" },
+        { "name": "type", "type": "QuestType" },
+        { "name": "name", "type": "string", "max": 120 },
+        { "name": "description", "type": "string", "max": 1500 },
+        { "name": "giverNpcId", "type": "i32" },
+        { "name": "turnInNpcId", "type": "i32" },
+        { "name": "abandonable", "type": "bool" },
+        { "name": "completable", "type": "bool" },
+        { "name": "objectives", "type": "array", "of": "QuestLogObjective", "max": 8 },
+        { "name": "rewardPreview", "type": "QuestRewardPreview" }
+      ]
+    },
+    "QuestGrantItem": {
+      "fields": [
+        { "name": "itemId", "type": "i32" },
+        { "name": "qty", "type": "i32" },
+        { "name": "source", "type": "RewardSource" }
+      ]
+    },
+    "QuestGrantSummary": {
+      "fields": [
+        { "name": "exp", "type": "i32" },
+        { "name": "sexp", "type": "i32" },
+        { "name": "slp", "type": "i32" },
+        { "name": "gold", "type": "i32" },
+        { "name": "items", "type": "array", "of": "QuestGrantItem", "max": 18 }
+      ]
+    },
+    "NpcQuestMarker": {
+      "fields": [
+        { "name": "npcId", "type": "i32" },
+        { "name": "marker", "type": "i32" }
+      ]
+    },
+    "CharStatPair": {
+      "fields": [
+        { "name": "value", "type": "i32" },
+        { "name": "xp", "type": "i32" }
+      ]
+    },
+    "CharGraph": {
+      "fields": [
+        { "name": "pow", "type": "i32" },
+        { "name": "mag", "type": "i32" },
+        { "name": "cha", "type": "i32" },
+        { "name": "luc", "type": "i32" }
+      ]
+    },
+    "CharPowStats": {
+      "fields": [
+        { "name": "atk", "type": "CharStatPair" },
+        { "name": "hit", "type": "CharStatPair" },
+        { "name": "agi", "type": "CharStatPair" }
+      ]
+    },
+    "CharMagStats": {
+      "fields": [
+        { "name": "mat", "type": "CharStatPair" },
+        { "name": "wis", "type": "CharStatPair" },
+        { "name": "mdef", "type": "CharStatPair" }
+      ]
+    },
+    "CharChaStats": {
+      "fields": [
+        { "name": "eva", "type": "CharStatPair" },
+        { "name": "end", "type": "CharStatPair" },
+        { "name": "def", "type": "CharStatPair" }
+      ]
+    },
+    "CharLucStats": {
+      "fields": [
+        { "name": "pot", "type": "CharStatPair" },
+        { "name": "luk", "type": "CharStatPair" },
+        { "name": "act", "type": "CharStatPair" }
+      ]
+    },
+    "CharStats": {
+      "fields": [
+        { "name": "pow", "type": "CharPowStats" },
+        { "name": "mag", "type": "CharMagStats" },
+        { "name": "cha", "type": "CharChaStats" },
+        { "name": "luc", "type": "CharLucStats" }
+      ]
+    },
+    "CharDerivedStats": {
+      "fields": [
+        { "name": "attackPower", "type": "f64" },
+        { "name": "magicPower", "type": "f64" },
+        { "name": "defense", "type": "f64" },
+        { "name": "magicDefense", "type": "f64" },
+        { "name": "hitRating", "type": "f64" },
+        { "name": "evasionRating", "type": "f64" },
+        { "name": "magicHitRating", "type": "f64" },
+        { "name": "magicEvasionRating", "type": "f64" },
+        { "name": "hitChance", "type": "f64" },
+        { "name": "evasionChance", "type": "f64" },
+        { "name": "magicHitChance", "type": "f64" },
+        { "name": "magicEvasionChance", "type": "f64" },
+        { "name": "critChance", "type": "f64" },
+        { "name": "critMultiplier", "type": "f64" },
+        { "name": "attackIntervalMs", "type": "i32" },
+        { "name": "moveSpeed", "type": "f32" },
+        { "name": "mpRegenPerMin", "type": "f64" }
+      ]
+    },
+    "CharStatDelta": {
+      "fields": [
+        { "name": "group", "type": "StatGroup" },
+        { "name": "code", "type": "StatCode" },
+        { "name": "valueDelta", "type": "i32" },
+        { "name": "valueAfter", "type": "i32" },
+        { "name": "xpAfter", "type": "i32" }
+      ]
+    },
+    "StatAllocation": {
+      "fields": [
+        { "name": "code", "type": "StatCode" },
+        { "name": "points", "type": "i32" }
+      ]
+    },
+    "PortalMarker": {
+      "fields": [
+        { "name": "portalId", "type": "i32" },
+        { "name": "x", "type": "f32" },
+        { "name": "y", "type": "f32" },
+        { "name": "name", "type": "string", "max": 64 },
+        { "name": "destZoneId", "type": "i32" }
+      ]
+    },
+    "CharSummary": {
+      "fields": [
+        { "name": "charId", "type": "i32" },
+        { "name": "name", "type": "string", "max": 66 },
+        { "name": "level", "type": "i32" },
+        { "name": "zoneId", "type": "i32" }
+      ]
+    },
+    "LifeLineInfo": {
+      "fields": [
+        { "name": "line", "type": "LifeLine" },
+        { "name": "points", "type": "i32" },
+        { "name": "rank", "type": "u8" },
+        { "name": "nextRankAt", "type": "i32" }
+      ]
+    },
+    "NodeDefInfo": {
+      "fields": [
+        { "name": "nodeDefId", "type": "i32" },
+        { "name": "line", "type": "LifeLine" },
+        { "name": "tier", "type": "u8" },
+        { "name": "minRank", "type": "u8" },
+        { "name": "interactRadius", "type": "f32" }
+      ]
+    },
+    "PuzzlePoint": {
+      "fields": [
+        { "name": "x", "type": "u16" },
+        { "name": "y", "type": "u16" }
+      ]
+    },
+    "PuzzleTap": {
+      "fields": [
+        { "name": "cycle", "type": "u8" },
+        { "name": "ms", "type": "u16" },
+        { "name": "x", "type": "u16" },
+        { "name": "y", "type": "u16" }
+      ]
+    },
+    "RecipeInfo": {
+      "fields": [
+        { "name": "recipeId", "type": "i32" },
+        { "name": "line", "type": "LifeLine" },
+        { "name": "tier", "type": "u8" },
+        { "name": "minRank", "type": "u8" },
+        { "name": "laborCost", "type": "i32" },
+        { "name": "goldFee", "type": "i32" },
+        { "name": "outputItemId", "type": "i32" },
+        { "name": "outputQty", "type": "i32" },
+        { "name": "greatBonusQty", "type": "i32" },
+        { "name": "inputs", "type": "array", "of": "RewardPreviewItem", "max": 6 }
+      ]
+    }
+  },
+  "_enums_doc": "{ Name: { repr: u8|u16|u32, values: { camelCaseName: code } } } — 와이어는 repr 폭 코드(미정의 코드 = 디코드 오류). 값 이름은 TS 문자열 리터럴·C# PascalCase 멤버 이름이 된다(이름 변경은 와이어 바이트는 그대로지만 lock 지문이 바뀌어 protoVersion bump — 코드 계약 변경).",
+  "enums": {
+    "MoveGait": {
+      "repr": "u8",
+      "values": { "run": 0, "walk": 1 }
+    },
+    "EntityType": {
+      "repr": "u8",
+      "values": { "unknown": 0, "player": 1, "monster": 2, "npc": 3, "grounditem": 4, "resource": 5 }
+    },
+    "SkillEffectKind": {
+      "repr": "u8",
+      "values": { "damage": 0, "heal": 1, "cast": 2, "fizzle": 3 }
+    },
+    "SkillCategory": {
+      "repr": "u8",
+      "values": { "physical": 0, "magical": 1, "heal": 2 }
+    },
+    "SkillDefEffectKind": {
+      "repr": "u8",
+      "values": { "damage": 0, "heal": 1, "passive": 2 }
+    },
+    "SkillTargeting": {
+      "repr": "u8",
+      "values": { "entity": 0, "ground": 1 }
+    },
+    "QuestType": {
+      "repr": "u8",
+      "values": { "scenario": 0, "normal": 1, "regional": 2, "daily": 3 }
+    },
+    "QuestObjectiveKind": {
+      "repr": "u8",
+      "values": { "kill": 0, "collect": 1, "talk": 2, "reach": 3 }
+    },
+    "RewardSource": {
+      "repr": "u8",
+      "values": { "fixed": 0, "choice": 1, "random": 2, "bonus": 3 }
+    },
+    "StatGroup": {
+      "repr": "u8",
+      "values": { "pow": 0, "mag": 1, "cha": 2, "luc": 3 }
+    },
+    "StatCode": {
+      "repr": "u8",
+      "values": { "atk": 0, "hit": 1, "agi": 2, "mat": 3, "wis": 4, "mdef": 5, "eva": 6, "end": 7, "def": 8, "pot": 9, "luk": 10, "act": 11 }
+    },
+    "LifeLine": {
+      "repr": "u8",
+      "values": { "logging": 0, "mining": 1, "gathering": 2, "weapon": 3, "armor": 4, "accessory": 5, "consumable": 6 }
+    },
+    "LifeChannelKind": {
+      "repr": "u8",
+      "values": { "gather": 0, "craft": 1 }
+    },
+    "GatherPuzzleKind": {
+      "repr": "u8",
+      "values": { "trace": 0, "tap": 1 }
+    }
+  },
+  "packets": {
+    "HELLO": {
+      "id": 1,
+      "_id_hex": "0x0001",
+      "direction": "C2S",
+      "frozen": true,
+      "fields": [
+        { "name": "clientProtoVer", "type": "i32" },
+        { "name": "clientBuildHash", "type": "u32" }
+      ]
+    },
+    "HELLO_ACK": {
+      "id": 2,
+      "_id_hex": "0x0002",
+      "direction": "S2C",
+      "frozen": true,
+      "fields": [
+        { "name": "serverProtoVer", "type": "i32" },
+        { "name": "serverTimeMs", "type": "f64" },
+        { "name": "sessionNonce", "type": "string", "max": 64 }
+      ]
+    },
+    "AUTH_REQ": {
+      "id": 3,
+      "_id_hex": "0x0003",
+      "direction": "C2S",
+      "fields": [
+        { "name": "mode", "type": "i32" },
+        { "name": "username", "type": "string", "max": 64 },
+        { "name": "secret", "type": "string", "max": 256 }
+      ]
+    },
+    "AUTH_RESULT": {
+      "id": 4,
+      "_id_hex": "0x0004",
+      "direction": "S2C",
+      "fields": [
+        { "name": "ok", "type": "bool" },
+        { "name": "accountId", "type": "i32" },
+        { "name": "sessionToken", "type": "string", "max": 64 },
+        { "name": "errCode", "type": "i32" }
+      ]
+    },
+    "CHAR_LIST_REQ": {
+      "id": 16,
+      "_id_hex": "0x0010",
+      "direction": "C2S",
+      "fields": []
+    },
+    "CHAR_LIST": {
+      "id": 17,
+      "_id_hex": "0x0011",
+      "direction": "S2C",
+      "fields": [
+        { "name": "chars", "type": "array", "of": "CharSummary", "max": 16 }
+      ]
+    },
+    "ENTER_WORLD_REQ": {
+      "id": 18,
+      "_id_hex": "0x0012",
+      "direction": "C2S",
+      "fields": [
+        { "name": "charId", "type": "i32" }
+      ]
+    },
+    "ENTER_WORLD_OK": {
+      "id": 19,
+      "_id_hex": "0x0013",
+      "direction": "S2C",
+      "fields": [
+        { "name": "charId", "type": "i32" },
+        { "name": "zoneId", "type": "i32" },
+        { "name": "tickIndex", "type": "i32" },
+        { "name": "spawnX", "type": "f32" },
+        { "name": "spawnY", "type": "f32" }
+      ]
+    },
+    "ZONE_INFO": {
+      "id": 20,
+      "_id_hex": "0x0014",
+      "direction": "S2C",
+      "fields": [
+        { "name": "zoneId", "type": "i32" },
+        { "name": "name", "type": "string", "max": 64 },
+        { "name": "width", "type": "f32" },
+        { "name": "height", "type": "f32" },
+        { "name": "tickRate", "type": "i32" },
+        { "name": "spawnX", "type": "f32" },
+        { "name": "spawnY", "type": "f32" }
+      ]
+    },
+    "CHAR_CREATE_REQ": {
+      "id": 22,
+      "_id_hex": "0x0016",
+      "direction": "C2S",
+      "fields": [
+        { "name": "name", "type": "string", "max": 64 }
+      ]
+    },
+    "CHAR_CREATE_RESULT": {
+      "id": 23,
+      "_id_hex": "0x0017",
+      "direction": "S2C",
+      "fields": [
+        { "name": "ok", "type": "bool" },
+        { "name": "charId", "type": "i32" },
+        { "name": "name", "type": "string", "max": 64 },
+        { "name": "errCode", "type": "i32" }
+      ]
+    },
+    "ZONE_CHANGE_REQ": {
+      "id": 21,
+      "_id_hex": "0x0015",
+      "direction": "C2S",
+      "fields": [
+        { "name": "portalId", "type": "i32" }
+      ]
+    },
+    "ZONE_CHANGE": {
+      "id": 24,
+      "_id_hex": "0x0018",
+      "direction": "S2C",
+      "fields": [
+        { "name": "newZoneId", "type": "i32" },
+        { "name": "name", "type": "string", "max": 64 },
+        { "name": "width", "type": "f32" },
+        { "name": "height", "type": "f32" },
+        { "name": "tickRate", "type": "i32" },
+        { "name": "spawnX", "type": "f32" },
+        { "name": "spawnY", "type": "f32" },
+        { "name": "tickIndex", "type": "i32" }
+      ]
+    },
+    "PORTAL_LIST": {
+      "id": 25,
+      "_id_hex": "0x0019",
+      "direction": "S2C",
+      "fields": [
+        { "name": "zoneId", "type": "i32" },
+        { "name": "portals", "type": "array", "of": "PortalMarker", "max": 32 }
+      ]
+    },
+    "INPUT_CMD": {
+      "id": 256,
+      "_id_hex": "0x0100",
+      "direction": "C2S",
+      "fields": [
+        { "name": "seq", "type": "i32" },
+        { "name": "tick", "type": "i32" },
+        { "name": "dx", "type": "i32" },
+        { "name": "dy", "type": "i32" },
+        { "name": "action", "type": "i32" },
+        { "name": "gait", "type": "MoveGait" }
+      ]
+    },
+    "SNAPSHOT_DELTA": {
+      "id": 257,
+      "_id_hex": "0x0101",
+      "direction": "S2C",
+      "fields": [
+        { "name": "tickIndex", "type": "u32" },
+        { "name": "ackSeq", "type": "u32" },
+        { "name": "updates", "type": "array", "of": "SnapshotUpdate", "max": 5460 }
+      ]
+    },
+    "ENTITY_SPAWN": {
+      "id": 258,
+      "_id_hex": "0x0102",
+      "direction": "S2C",
+      "fields": [
+        { "name": "entityId", "type": "i32" },
+        { "name": "type", "type": "EntityType" },
+        { "name": "x", "type": "f32" },
+        { "name": "y", "type": "f32" },
+        { "name": "name", "type": "string", "max": 66 },
+        { "name": "level", "type": "i32" },
+        { "name": "hp", "type": "i32" },
+        { "name": "hpMax", "type": "i32" },
+        { "name": "itemId", "type": "i32" },
+        { "name": "qty", "type": "i32" },
+        { "name": "npcId", "type": "i32" },
+        { "name": "monsterDefId", "type": "i32" }
+      ]
+    },
+    "ENTITY_DESPAWN": {
+      "id": 259,
+      "_id_hex": "0x0103",
+      "direction": "S2C",
+      "fields": [
+        { "name": "entityId", "type": "i32" },
+        { "name": "reason", "type": "i32" }
+      ]
+    },
+    "MOVE_TO": {
+      "id": 260,
+      "_id_hex": "0x0104",
+      "direction": "C2S",
+      "fields": [
+        { "name": "seq", "type": "i32" },
+        { "name": "tick", "type": "i32" },
+        { "name": "targetX", "type": "f32" },
+        { "name": "targetY", "type": "f32" }
+      ]
+    },
+    "ENTITY_META": {
+      "id": 261,
+      "_id_hex": "0x0105",
+      "direction": "S2C",
+      "fields": [
+        { "name": "entityId", "type": "i32" },
+        { "name": "hp", "type": "i32" },
+        { "name": "hpMax", "type": "i32" },
+        { "name": "level", "type": "i32" }
+      ]
+    },
+    "MOVE_PATH": {
+      "id": 262,
+      "_id_hex": "0x0106",
+      "direction": "S2C",
+      "fields": [
+        { "name": "entityId", "type": "i32" },
+        { "name": "seq", "type": "i32" },
+        { "name": "waypoints", "type": "array", "of": "Waypoint", "max": 1024 }
+      ]
+    },
+    "MOVE_STOP": {
+      "id": 263,
+      "_id_hex": "0x0107",
+      "direction": "C2S",
+      "fields": [
+        { "name": "seq", "type": "i32" },
+        { "name": "tick", "type": "i32" }
+      ]
+    },
+    "CHAT_SAY": {
+      "id": 528,
+      "_id_hex": "0x0210",
+      "direction": "C2S",
+      "fields": [
+        { "name": "channel", "type": "i32" },
+        { "name": "target", "type": "string", "max": 64 },
+        { "name": "text", "type": "string", "max": 600 }
+      ]
+    },
+    "CHAT_BCAST": {
+      "id": 529,
+      "_id_hex": "0x0211",
+      "direction": "S2C",
+      "fields": [
+        { "name": "channel", "type": "i32" },
+        { "name": "senderId", "type": "i32" },
+        { "name": "senderName", "type": "string", "max": 66 },
+        { "name": "text", "type": "string", "max": 600 }
+      ]
+    },
+    "CREATE_CHARACTER_V2": {
+      "id": 768,
+      "_id_hex": "0x0300",
+      "direction": "C2S",
+      "fields": [
+        { "name": "name", "type": "string", "max": 64 },
+        { "name": "race", "type": "i32" },
+        { "name": "graphPow", "type": "i32" },
+        { "name": "graphMag", "type": "i32" },
+        { "name": "graphCha", "type": "i32" },
+        { "name": "graphLuc", "type": "i32" }
+      ]
+    },
+    "CHAR_STATS_FULL": {
+      "id": 769,
+      "_id_hex": "0x0301",
+      "direction": "S2C",
+      "fields": [
+        { "name": "charId", "type": "i32" },
+        { "name": "name", "type": "string", "max": 66 },
+        { "name": "race", "type": "i32" },
+        { "name": "graph", "type": "CharGraph" },
+        { "name": "stats", "type": "CharStats" },
+        { "name": "level", "type": "i32" },
+        { "name": "exp", "type": "i32" },
+        { "name": "hp", "type": "i32" },
+        { "name": "hpMax", "type": "i32" },
+        { "name": "mp", "type": "i32" },
+        { "name": "mpMax", "type": "i32" },
+        { "name": "slv", "type": "i32" },
+        { "name": "sexp", "type": "i32" },
+        { "name": "slp", "type": "i32" },
+        { "name": "gold", "type": "i32" },
+        { "name": "zoneId", "type": "i32" },
+        { "name": "x", "type": "f32" },
+        { "name": "y", "type": "f32" },
+        { "name": "derived", "type": "CharDerivedStats" },
+        { "name": "freePoints", "type": "i32" },
+        { "name": "allocatedPoints", "type": "i32" }
+      ]
+    },
+    "CHAR_LEVEL_UP": {
+      "id": 770,
+      "_id_hex": "0x0302",
+      "direction": "S2C",
+      "fields": [
+        { "name": "newLevel", "type": "i32" },
+        { "name": "statDeltas", "type": "array", "of": "CharStatDelta", "max": 3588 },
+        { "name": "hpMaxNew", "type": "i32" },
+        { "name": "mpMaxNew", "type": "i32" }
+      ]
+    },
+    "CHAR_EXP_GAIN": {
+      "id": 771,
+      "_id_hex": "0x0303",
+      "direction": "S2C",
+      "fields": [
+        { "name": "expDelta", "type": "i32" },
+        { "name": "sexpDelta", "type": "i32" },
+        { "name": "expTotal", "type": "i32" },
+        { "name": "sexpTotal", "type": "i32" }
+      ]
+    },
+    "GOLD_UPDATE": {
+      "id": 772,
+      "_id_hex": "0x0304",
+      "direction": "S2C",
+      "fields": [
+        { "name": "gold", "type": "i32" },
+        { "name": "delta", "type": "i32" }
+      ]
+    },
+    "STAT_ALLOCATE": {
+      "id": 773,
+      "_id_hex": "0x0305",
+      "direction": "C2S",
+      "fields": [
+        { "name": "requestId", "type": "i32" },
+        { "name": "allocations", "type": "array", "of": "StatAllocation", "max": 12 }
+      ]
+    },
+    "STAT_RESET": {
+      "id": 774,
+      "_id_hex": "0x0306",
+      "direction": "C2S",
+      "fields": [
+        { "name": "requestId", "type": "i32" }
+      ]
+    },
+    "STAT_POINTS_ACK": {
+      "id": 775,
+      "_id_hex": "0x0307",
+      "direction": "S2C",
+      "fields": [
+        { "name": "requestId", "type": "i32" },
+        { "name": "op", "type": "i32" },
+        { "name": "errCode", "type": "i32" },
+        { "name": "freePoints", "type": "i32" }
+      ]
+    },
+    "TARGET_SELECT": {
+      "id": 1024,
+      "_id_hex": "0x0400",
+      "direction": "C2S",
+      "fields": [
+        { "name": "targetEntityId", "type": "i32" }
+      ]
+    },
+    "TARGET_ACK": {
+      "id": 1025,
+      "_id_hex": "0x0401",
+      "direction": "S2C",
+      "fields": [
+        { "name": "targetEntityId", "type": "i32" },
+        { "name": "errCode", "type": "i32" }
+      ]
+    },
+    "ATTACK_START": {
+      "id": 1026,
+      "_id_hex": "0x0402",
+      "direction": "C2S",
+      "fields": []
+    },
+    "ATTACK_STOP": {
+      "id": 1027,
+      "_id_hex": "0x0403",
+      "direction": "C2S",
+      "fields": []
+    },
+    "DAMAGE_EVENT": {
+      "id": 1040,
+      "_id_hex": "0x0410",
+      "direction": "S2C",
+      "fields": [
+        { "name": "attackerEntityId", "type": "i32" },
+        { "name": "targetEntityId", "type": "i32" },
+        { "name": "damage", "type": "i32" },
+        { "name": "isCrit", "type": "bool" },
+        { "name": "isMiss", "type": "bool" }
+      ]
+    },
+    "DEATH_NOTIFY": {
+      "id": 1041,
+      "_id_hex": "0x0411",
+      "direction": "S2C",
+      "fields": [
+        { "name": "victimEntityId", "type": "i32" },
+        { "name": "attackerEntityId", "type": "i32" },
+        { "name": "expLost", "type": "i32" },
+        { "name": "sexpLost", "type": "i32" }
+      ]
+    },
+    "RESPAWN_REQ": {
+      "id": 1042,
+      "_id_hex": "0x0412",
+      "direction": "C2S",
+      "fields": []
+    },
+    "RESPAWN_OK": {
+      "id": 1043,
+      "_id_hex": "0x0413",
+      "direction": "S2C",
+      "fields": [
+        { "name": "zoneId", "type": "i32" },
+        { "name": "spawnX", "type": "f32" },
+        { "name": "spawnY", "type": "f32" },
+        { "name": "hp", "type": "i32" },
+        { "name": "hpMax", "type": "i32" },
+        { "name": "mp", "type": "i32" },
+        { "name": "mpMax", "type": "i32" }
+      ]
+    },
+    "SKILL_CAST": {
+      "id": 1056,
+      "_id_hex": "0x0420",
+      "direction": "C2S",
+      "fields": [
+        { "name": "skillId", "type": "i32" },
+        { "name": "targetEntityId", "type": "i32" },
+        { "name": "groundX", "type": "f32" },
+        { "name": "groundY", "type": "f32" }
+      ]
+    },
+    "SKILL_LIST": {
+      "id": 1057,
+      "_id_hex": "0x0421",
+      "direction": "S2C",
+      "fields": [
+        { "name": "skills", "type": "array", "of": "SkillInfo", "max": 256 }
+      ]
+    },
+    "SKILL_EFFECT": {
+      "id": 1058,
+      "_id_hex": "0x0422",
+      "direction": "S2C",
+      "fields": [
+        { "name": "skillId", "type": "i32" },
+        { "name": "casterEntityId", "type": "i32" },
+        { "name": "targetEntityId", "type": "i32" },
+        { "name": "effectKind", "type": "SkillEffectKind" },
+        { "name": "amount", "type": "i32" },
+        { "name": "isCrit", "type": "bool" },
+        { "name": "isMiss", "type": "bool" },
+        { "name": "groundX", "type": "f32" },
+        { "name": "groundY", "type": "f32" },
+        { "name": "castId", "type": "i32" },
+        { "name": "impactDelayMs", "type": "i32" },
+        { "name": "variant", "type": "u8" },
+        { "name": "hitIndex", "type": "u8" }
+      ]
+    },
+    "SKILL_CAST_ACK": {
+      "id": 1059,
+      "_id_hex": "0x0423",
+      "direction": "S2C",
+      "fields": [
+        { "name": "skillId", "type": "i32" },
+        { "name": "errCode", "type": "i32" },
+        { "name": "cooldownMs", "type": "i32" }
+      ]
+    },
+    "MANA_UPDATE": {
+      "id": 1060,
+      "_id_hex": "0x0424",
+      "direction": "S2C",
+      "fields": [
+        { "name": "mp", "type": "i32" },
+        { "name": "mpMax", "type": "i32" }
+      ]
+    },
+    "SKILL_LEARN": {
+      "id": 1061,
+      "_id_hex": "0x0425",
+      "direction": "C2S",
+      "fields": [
+        { "name": "skillId", "type": "i32" }
+      ]
+    },
+    "SKILL_LEVEL_UP": {
+      "id": 1062,
+      "_id_hex": "0x0426",
+      "direction": "C2S",
+      "fields": [
+        { "name": "skillId", "type": "i32" }
+      ]
+    },
+    "SKILL_LEARN_ACK": {
+      "id": 1063,
+      "_id_hex": "0x0427",
+      "direction": "S2C",
+      "fields": [
+        { "name": "op", "type": "i32" },
+        { "name": "skillId", "type": "i32" },
+        { "name": "errCode", "type": "i32" },
+        { "name": "newLevel", "type": "i32" },
+        { "name": "slpAfter", "type": "i32" }
+      ]
+    },
+    "SKILL_LV_UP": {
+      "id": 1064,
+      "_id_hex": "0x0428",
+      "direction": "S2C",
+      "fields": [
+        { "name": "newSlv", "type": "i32" },
+        { "name": "slpGained", "type": "i32" },
+        { "name": "slpTotal", "type": "i32" }
+      ]
+    },
+    "ITEM_USE": {
+      "id": 1088,
+      "_id_hex": "0x0440",
+      "direction": "C2S",
+      "fields": [
+        { "name": "slot", "type": "i32" }
+      ]
+    },
+    "ITEM_EQUIP": {
+      "id": 1089,
+      "_id_hex": "0x0441",
+      "direction": "C2S",
+      "fields": [
+        { "name": "slot", "type": "i32" }
+      ]
+    },
+    "ITEM_UNEQUIP": {
+      "id": 1090,
+      "_id_hex": "0x0442",
+      "direction": "C2S",
+      "fields": [
+        { "name": "equipSlot", "type": "i32" }
+      ]
+    },
+    "ITEM_PICKUP": {
+      "id": 1091,
+      "_id_hex": "0x0443",
+      "direction": "C2S",
+      "fields": [
+        { "name": "entityId", "type": "i32" }
+      ]
+    },
+    "INVENTORY_LIST": {
+      "id": 1092,
+      "_id_hex": "0x0444",
+      "direction": "S2C",
+      "fields": [
+        { "name": "slots", "type": "array", "of": "InventoryEntry", "max": 24 },
+        { "name": "equipment", "type": "EquipmentSlots" }
+      ]
+    },
+    "INVENTORY_UPDATE": {
+      "id": 1093,
+      "_id_hex": "0x0445",
+      "direction": "S2C",
+      "bodyOf": "INVENTORY_LIST"
+    },
+    "ITEM_USE_ACK": {
+      "id": 1094,
+      "_id_hex": "0x0446",
+      "direction": "S2C",
+      "fields": [
+        { "name": "slot", "type": "i32" },
+        { "name": "itemId", "type": "i32" },
+        { "name": "errCode", "type": "i32" },
+        { "name": "healHp", "type": "i32" },
+        { "name": "healMp", "type": "i32" }
+      ]
+    },
+    "ITEM_PICKUP_ACK": {
+      "id": 1095,
+      "_id_hex": "0x0447",
+      "direction": "S2C",
+      "fields": [
+        { "name": "entityId", "type": "i32" },
+        { "name": "errCode", "type": "i32" }
+      ]
+    },
+    "NPC_INTERACT": {
+      "id": 1104,
+      "_id_hex": "0x0450",
+      "direction": "C2S",
+      "fields": [
+        { "name": "entityId", "type": "i32" }
+      ]
+    },
+    "NPC_DIALOG": {
+      "id": 1105,
+      "_id_hex": "0x0451",
+      "direction": "S2C",
+      "fields": [
+        { "name": "entityId", "type": "i32" },
+        { "name": "npcId", "type": "i32" },
+        { "name": "npcName", "type": "string", "max": 66 },
+        { "name": "dialogueId", "type": "i32" },
+        { "name": "entry", "type": "string", "max": 64 },
+        { "name": "nodes", "type": "array", "of": "DialogNode", "max": 12 }
+      ]
+    },
+    "NPC_ACTION": {
+      "id": 1106,
+      "_id_hex": "0x0452",
+      "direction": "C2S",
+      "fields": [
+        { "name": "entityId", "type": "i32" },
+        { "name": "dialogueId", "type": "i32" },
+        { "name": "nodeId", "type": "string", "max": 64 },
+        { "name": "optionIndex", "type": "i32" },
+        { "name": "actionType", "type": "string", "max": 32 },
+        { "name": "questId", "type": "i32" },
+        { "name": "chosenIndex", "type": "i32" }
+      ]
+    },
+    "QUEST_LIST": {
+      "id": 1120,
+      "_id_hex": "0x0460",
+      "direction": "S2C",
+      "fields": [
+        { "name": "active", "type": "array", "of": "QuestLogEntry", "max": 20 },
+        { "name": "completed", "type": "array", "of": "i32", "max": 1024 },
+        { "name": "dailyDoneToday", "type": "array", "of": "i32", "max": 1024 }
+      ]
+    },
+    "QUEST_PROGRESS": {
+      "id": 1121,
+      "_id_hex": "0x0461",
+      "direction": "S2C",
+      "fields": [
+        { "name": "questId", "type": "i32" },
+        { "name": "objectiveIndex", "type": "i32" },
+        { "name": "current", "type": "i32" },
+        { "name": "required", "type": "i32" },
+        { "name": "questCompletable", "type": "bool" }
+      ]
+    },
+    "QUEST_ACTION_ACK": {
+      "id": 1122,
+      "_id_hex": "0x0462",
+      "direction": "S2C",
+      "fields": [
+        { "name": "op", "type": "i32" },
+        { "name": "questId", "type": "i32" },
+        { "name": "errCode", "type": "i32" },
+        { "name": "rewards", "type": "QuestGrantSummary", "optional": true }
+      ]
+    },
+    "QUEST_ABANDON": {
+      "id": 1123,
+      "_id_hex": "0x0463",
+      "direction": "C2S",
+      "fields": [
+        { "name": "questId", "type": "i32" }
+      ]
+    },
+    "QUEST_NPC_MARKERS": {
+      "id": 1124,
+      "_id_hex": "0x0464",
+      "direction": "S2C",
+      "fields": [
+        { "name": "npcs", "type": "array", "of": "NpcQuestMarker", "max": 1024 }
+      ]
+    },
+    "SHOP_LIST": {
+      "id": 1107, "_id_hex": "0x0453", "direction": "S2C",
+      "fields": [
+        { "name": "entityId", "type": "i32" },
+        { "name": "shopId", "type": "i32" },
+        { "name": "name", "type": "string", "max": 240 },
+        { "name": "offers", "type": "array", "of": "ShopOffer", "max": 256 }
+      ]
+    },
+    "SHOP_BUY": {
+      "id": 1108, "_id_hex": "0x0454", "direction": "C2S",
+      "fields": [{"name":"entityId","type":"i32"},{"name":"shopId","type":"i32"},{"name":"itemId","type":"i32"},{"name":"qty","type":"i32"},{"name":"requestId","type":"i32"}]
+    },
+    "SHOP_SELL": {
+      "id": 1109, "_id_hex": "0x0455", "direction": "C2S",
+      "fields": [{"name":"entityId","type":"i32"},{"name":"shopId","type":"i32"},{"name":"itemId","type":"i32"},{"name":"slot","type":"i32"},{"name":"qty","type":"i32"},{"name":"requestId","type":"i32"}]
+    },
+    "SHOP_ACK": {
+      "id": 1110, "_id_hex": "0x0456", "direction": "S2C",
+      "fields": [{"name":"requestId","type":"i32"},{"name":"op","type":"i32"},{"name":"errCode","type":"i32"},{"name":"gold","type":"i32"}]
+    },
+    "UI_PREFERENCES_SET": {
+      "id": 1136,
+      "_id_hex": "0x0470",
+      "direction": "C2S",
+      "fields": [
+        { "name": "quickSlots", "type": "array", "of": "i32", "min": 6, "max": 6, "optional": true },
+        { "name": "trackedQuestIds", "type": "array", "of": "i32", "max": 5, "optional": true }
+      ]
+    },
+    "UI_PREFERENCES": {
+      "id": 1137,
+      "_id_hex": "0x0471",
+      "direction": "S2C",
+      "fields": [
+        { "name": "quickSlots", "type": "array", "of": "i32", "min": 6, "max": 6 },
+        { "name": "trackedQuestIds", "type": "array", "of": "i32", "max": 5 },
+        { "name": "hasSavedSettings", "type": "bool" }
+      ]
+    },
+    "GATHER_START": {
+      "id": 1152,
+      "_id_hex": "0x0480",
+      "direction": "C2S",
+      "fields": [
+        { "name": "nodeEid", "type": "i32" }
+      ]
+    },
+    "LIFE_CANCEL": {
+      "id": 1153,
+      "_id_hex": "0x0481",
+      "direction": "C2S",
+      "fields": []
+    },
+    "LIFE_CHANNEL": {
+      "id": 1154,
+      "_id_hex": "0x0482",
+      "direction": "S2C",
+      "fields": [
+        { "name": "channelId", "type": "i32" },
+        { "name": "kind", "type": "LifeChannelKind" },
+        { "name": "targetEid", "type": "i32" },
+        { "name": "durationMs", "type": "i32" },
+        { "name": "requestId", "type": "i32" },
+        { "name": "code", "type": "u8" }
+      ]
+    },
+    "LIFE_RESULT": {
+      "id": 1155,
+      "_id_hex": "0x0483",
+      "direction": "S2C",
+      "fields": [
+        { "name": "channelId", "type": "i32" },
+        { "name": "code", "type": "u8" },
+        { "name": "items", "type": "array", "of": "RewardPreviewItem", "max": 8 },
+        { "name": "line", "type": "LifeLine" },
+        { "name": "profGain", "type": "i32" }
+      ]
+    },
+    "LIFE_STATUS": {
+      "id": 1156,
+      "_id_hex": "0x0484",
+      "direction": "S2C",
+      "fields": [
+        { "name": "labor", "type": "i32" },
+        { "name": "laborMax", "type": "i32" },
+        { "name": "msToNext", "type": "i32" },
+        { "name": "lines", "type": "array", "of": "LifeLineInfo", "max": 7 }
+      ]
+    },
+    "NODE_CATALOG": {
+      "id": 1157,
+      "_id_hex": "0x0485",
+      "direction": "S2C",
+      "fields": [
+        { "name": "nodes", "type": "array", "of": "NodeDefInfo", "max": 64 }
+      ]
+    },
+    "GATHER_PUZZLE": {
+      "id": 1158,
+      "_id_hex": "0x0486",
+      "direction": "S2C",
+      "fields": [
+        { "name": "channelId", "type": "i32" },
+        { "name": "kind", "type": "GatherPuzzleKind" },
+        { "name": "boardW", "type": "u16" },
+        { "name": "boardH", "type": "u16" },
+        { "name": "readyMs", "type": "u16" },
+        { "name": "cycleMs", "type": "u16" },
+        { "name": "maxCycles", "type": "u8" },
+        { "name": "bandHeight", "type": "u16" },
+        { "name": "pathWidth", "type": "u16" },
+        { "name": "circleRadius", "type": "u16" },
+        { "name": "points", "type": "array", "of": "PuzzlePoint", "max": 12 }
+      ]
+    },
+    "GATHER_TRACE": {
+      "id": 1159,
+      "_id_hex": "0x0487",
+      "direction": "C2S",
+      "fields": [
+        { "name": "channelId", "type": "i32" },
+        { "name": "cycle", "type": "u8" },
+        { "name": "pressMs", "type": "u16" },
+        { "name": "tailMs", "type": "u8" },
+        { "name": "samples", "type": "array", "of": "PuzzlePoint", "max": 160 }
+      ]
+    },
+    "GATHER_TAPS": {
+      "id": 1160,
+      "_id_hex": "0x0488",
+      "direction": "C2S",
+      "fields": [
+        { "name": "channelId", "type": "i32" },
+        { "name": "taps", "type": "array", "of": "PuzzleTap", "max": 16 }
+      ]
+    },
+    "RECIPE_LIST": {
+      "id": 1168,
+      "_id_hex": "0x0490",
+      "direction": "S2C",
+      "fields": [
+        { "name": "npcEid", "type": "i32" },
+        { "name": "stationId", "type": "i32" },
+        { "name": "name", "type": "string", "max": 64 },
+        { "name": "recipes", "type": "array", "of": "RecipeInfo", "max": 128 }
+      ]
+    },
+    "CRAFT_REQ": {
+      "id": 1169,
+      "_id_hex": "0x0491",
+      "direction": "C2S",
+      "fields": [
+        { "name": "npcEid", "type": "i32" },
+        { "name": "recipeId", "type": "i32" },
+        { "name": "count", "type": "i32" },
+        { "name": "requestId", "type": "i32" }
+      ]
+    },
+    "CRAFT_ACK": {
+      "id": 1170,
+      "_id_hex": "0x0492",
+      "direction": "S2C",
+      "fields": [
+        { "name": "requestId", "type": "i32" },
+        { "name": "errCode", "type": "u8" },
+        { "name": "made", "type": "i32" },
+        { "name": "greats", "type": "i32" },
+        { "name": "gold", "type": "i32" },
+        { "name": "outputItemId", "type": "i32" }
+      ]
+    },
+    "PING": {
+      "id": 3840,
+      "_id_hex": "0x0F00",
+      "direction": "C2S",
+      "fields": [
+        { "name": "clientTimeMs", "type": "f64" }
+      ]
+    },
+    "PONG": {
+      "id": 3841,
+      "_id_hex": "0x0F01",
+      "direction": "S2C",
+      "fields": [
+        { "name": "clientTimeMs", "type": "f64" },
+        { "name": "serverTimeMs", "type": "f64" }
+      ]
+    },
+    "KICK": {
+      "id": 3843,
+      "_id_hex": "0x0F03",
+      "direction": "S2C",
+      "frozen": true,
+      "fields": [
+        { "name": "reason", "type": "i32" },
+        { "name": "detail", "type": "string", "max": 600 }
+      ]
+    }
+  }
+}

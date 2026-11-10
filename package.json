@@ -1,0 +1,17 @@
+{
+  "name": "noah-server-excerpt",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": ["server", "tools/codegen", "tools/nav"],
+  "scripts": {
+    "gen:check": "bun run --cwd tools/codegen gen:check",
+    "typecheck": "bun run --cwd server typecheck && bunx tsc --noEmit -p tools/codegen",
+    "lint": "biome check .",
+    "test": "bun test",
+    "ci": "bun run gen:check && bun run typecheck && bun run lint && bun run test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.0",
+    "typescript": "^5.6.0"
+  }
+}

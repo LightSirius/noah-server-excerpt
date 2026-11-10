@@ -1,0 +1,14 @@
+node_modules/
+.bun/
+dist/
+logs/
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.*
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.excerpt-export

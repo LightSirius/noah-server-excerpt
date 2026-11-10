@@ -1,0 +1,13 @@
+* text=auto
+
+# 코드젠 입출력은 LF 고정 — CRLF로 체크아웃되면 스키마 해시가 환경마다 달라져 드리프트 검사가 거짓으로 실패한다.
+shared/schema/packets.json                          text eol=lf
+shared/schema/packets.lock.json                     text eol=lf
+server/src/net/codec.generated.ts                   text eol=lf
+server/src/net/wireCodec.generated.ts               text eol=lf
+client/Noah/Assets/Scripts/Net/Codec.Generated.cs   text eol=lf
+client/Noah/Assets/Scripts/Net/WireCodec.Generated.cs text eol=lf
+client/Noah/Assets/Tests/EditMode/Generated/*.Generated.cs text eol=lf
+
+*.json text eol=lf
+*.sh text eol=lf
